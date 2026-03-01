@@ -1,6 +1,6 @@
 # [imaxnearme.com](https://imaxnearme.com)
 
-![IMAX Near Me](public/preview-image.png)
+![IMAX Near Me](public/IMAX-near-me-preview.png)
 
 Interactive map of IMAX theatres worldwide. Filter by projector type — 15/70mm film, GT Laser, single laser, and dome — to find the best IMAX experience near you.
 
