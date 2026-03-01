@@ -770,4 +770,13 @@ html {
     width: 100%;
     max-height: calc(100vh - 100px);
   }
+
+  .leaflet-control-attribution {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: auto !important;
+    border-radius: 0 0 4px 0 !important;
+  }
 }
