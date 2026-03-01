@@ -22,6 +22,7 @@ export interface Venue {
   latitude: number;
   longitude: number;
   google_places_id: string;
+  imax_url?: string;
 }
 
 export interface VenueData {

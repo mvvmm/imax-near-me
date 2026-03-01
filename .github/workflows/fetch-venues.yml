@@ -22,6 +22,11 @@ jobs:
           wrangler r2 object get imaxnearme-data/theatre-details.json --file=theatre-details.json --remote
           echo "Cache size: $(wc -c < theatre-details.json) bytes"
 
+      - name: Download IMAX URL cache from R2
+        run: |
+          wrangler r2 object get imaxnearme-data/imax-urls.json --file=imax-urls.json --remote || echo '{}' > imax-urls.json
+          echo "IMAX URL cache size: $(wc -c < imax-urls.json) bytes"
+
       - name: Fetch venue data
         run: bash scripts/fetch-imax-venues.sh
         env:
@@ -32,3 +37,6 @@ jobs:
 
       - name: Upload theatre cache to R2
         run: bash scripts/safe-r2-upload.sh imaxnearme-data/theatre-details.json theatre-details.json
+
+      - name: Upload IMAX URL cache to R2
+        run: bash scripts/safe-r2-upload.sh imaxnearme-data/imax-urls.json imax-urls.json

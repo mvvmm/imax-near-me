@@ -13,7 +13,9 @@
     "fetch-venues": "bash scripts/fetch-imax-venues.sh",
     "upload-venues": "bash scripts/safe-r2-upload.sh imaxnearme-data/imax-venues.json imax-venues.json",
     "upload-cache": "bash scripts/safe-r2-upload.sh imaxnearme-data/theatre-details.json theatre-details.json",
-    "download-cache": "wrangler r2 object get imaxnearme-data/theatre-details.json --file=theatre-details.json --remote"
+    "download-cache": "wrangler r2 object get imaxnearme-data/theatre-details.json --file=theatre-details.json --remote",
+    "upload-imax-cache": "bash scripts/safe-r2-upload.sh imaxnearme-data/imax-urls.json imax-urls.json",
+    "download-imax-cache": "wrangler r2 object get imaxnearme-data/imax-urls.json --file=imax-urls.json --remote"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",

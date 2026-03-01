@@ -198,11 +198,18 @@ def has_premium_projector(v):
     fp = v['film_projector']
     return bool(fp) or 'gt laser' in dp or 'laser xt' in dp or 'cola' in dp or 'dome' in dp
 
+def looks_like_venue(v):
+    name = v['name']
+    # Filter out rows where column alignment drifted (name is an aspect ratio, etc.)
+    if re.match(r'^[\d.:]+$', name):
+        return False
+    return True
+
 before = len(venues)
-venues = [v for v in venues if has_premium_projector(v)]
+venues = [v for v in venues if has_premium_projector(v) and looks_like_venue(v)]
 skipped = before - len(venues)
 if skipped:
-    print(f'Filtered out {skipped} venues with no premium projector (IMAX Digital only)', file=sys.stderr)
+    print(f'Filtered out {skipped} malformed or non-premium venues', file=sys.stderr)
 
 output = {
     'source': 'https://imax.fandom.com/wiki/List_of_IMAX_venues',
@@ -300,3 +307,81 @@ print(f'Done! {lookups_done} new lookups, {lookups_cached} cached, {lookups_fail
 " "$OUTPUT" "$DETAILS_FILE" "$LOOKUP_SCRIPT"
 
 echo "Enriched output written to $OUTPUT"
+
+# Enrich with IMAX.com theatre URLs
+IMAX_URLS_FILE="$ROOT_DIR/imax-urls.json"
+IMAX_LOOKUP_SCRIPT="$SCRIPT_DIR/lookup-imax-url.sh"
+
+if [ ! -x "$IMAX_LOOKUP_SCRIPT" ]; then
+  echo "Warning: lookup-imax-url.sh not found or not executable, skipping IMAX URL enrichment." >&2
+  exit 0
+fi
+
+echo "Enriching venues with IMAX.com theatre URLs..."
+
+python3 -c "
+import json, subprocess, sys, time
+
+output_file = sys.argv[1]
+urls_file = sys.argv[2]
+lookup_script = sys.argv[3]
+
+data = json.load(open(output_file))
+venues = data['venues']
+
+# Load existing cache
+try:
+    cache = json.load(open(urls_file))
+except (FileNotFoundError, json.JSONDecodeError):
+    cache = {}
+
+lookups_done = 0
+lookups_cached = 0
+lookups_failed = 0
+
+for i, venue in enumerate(venues):
+    name = venue['name']
+    city = venue.get('city', '')
+
+    # Check cache
+    if name in cache:
+        result = cache[name]
+        lookups_cached += 1
+    else:
+        # Call lookup script
+        try:
+            proc = subprocess.run(
+                [lookup_script, name, city],
+                capture_output=True, text=True, timeout=30
+            )
+            if proc.returncode == 0 and proc.stdout.strip():
+                result = json.loads(proc.stdout.strip())
+                lookups_done += 1
+                # Rate limit: respect Google CSE quota
+                time.sleep(0.2)
+            else:
+                result = None
+                lookups_failed += 1
+                print(f'  [{i+1}/{len(venues)}] MISS: {name}', file=sys.stderr)
+        except Exception as e:
+            result = None
+            lookups_failed += 1
+            print(f'  [{i+1}/{len(venues)}] ERROR: {name}: {e}', file=sys.stderr)
+
+    # Enrich venue with IMAX URL if found
+    if result and result.get('imax_url'):
+        venue['imax_url'] = result['imax_url']
+
+    # Progress
+    total = lookups_done + lookups_cached
+    if total % 50 == 0 and total > 0:
+        print(f'  [{total}/{len(venues)}] processed ({lookups_done} new, {lookups_cached} cached)', file=sys.stderr)
+
+data['venue_count'] = len(venues)
+with open(output_file, 'w') as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+
+print(f'IMAX URLs: {lookups_done} new lookups, {lookups_cached} cached, {lookups_failed} failed.', file=sys.stderr)
+" "$OUTPUT" "$IMAX_URLS_FILE" "$IMAX_LOOKUP_SCRIPT"
+
+echo "IMAX URL enrichment complete."
