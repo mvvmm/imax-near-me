@@ -98,7 +98,9 @@ export function InfoPanel({ visible, onClose }: Props) {
           <p>
             Fan term for smaller IMAX screens with standard digital projectors.
             Not all IMAX theatres deliver the same experience — screen size and
-            projector type matter.
+            projector type matter. LieMAX theatres are not included on this
+            site, as they don't deliver a better experience than most digital
+            theatres today.
           </p>
         </div>
         <div className="info-concept">
