@@ -309,6 +309,7 @@ interface Props {
   zoom: number;
   userLocation: { lat: number; lng: number } | null;
   onSelectVenue?: (venue: Venue | null) => void;
+  theme?: "light" | "dark";
 }
 
 export function Map({
@@ -318,6 +319,7 @@ export function Map({
   zoom,
   userLocation,
   onSelectVenue,
+  theme = "dark",
 }: Props) {
   return (
     <MapContainer
@@ -334,12 +336,22 @@ export function Map({
     >
       <SetView lat={center.lat} lng={center.lng} zoom={zoom} />
       <ScrollZoomAdjust />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        className="dark-tiles"
-        maxNativeZoom={14}
-      />
+      {theme === "dark" ? (
+        <TileLayer
+          key="dark"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          className="dark-tiles"
+          maxNativeZoom={14}
+        />
+      ) : (
+        <TileLayer
+          key="light"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxNativeZoom={19}
+        />
+      )}
       <MarkerClusterGroup
         chunkedLoading
         removeOutsideVisibleBounds={false}

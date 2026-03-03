@@ -61,6 +61,14 @@ function offsetOverlapping(venues: Venue[]): Venue[] {
   });
 }
 
+function getInitialTheme(): "light" | "dark" {
+  const stored = localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
 export default function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
@@ -71,7 +79,23 @@ export default function App() {
     film: true,
     dome: true,
   });
+  const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme);
   const geo = useGeolocation();
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) =>
+      setTheme(e.matches ? "dark" : "light");
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
   useEffect(() => {
     fetch("https://data.imaxnearme.com/imax-venues.json")
@@ -98,6 +122,8 @@ export default function App() {
           totalCount={venues.length}
           showInfo={showInfo}
           onToggleInfo={() => setShowInfo((s) => !s)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <InfoPanel visible={showInfo} onClose={() => setShowInfo(false)} />
       </div>
@@ -108,6 +134,7 @@ export default function App() {
         zoom={geo.defaultZoom}
         userLocation={geo.located ? { lat: geo.lat, lng: geo.lng } : null}
         onSelectVenue={setSelectedVenue}
+        theme={theme}
       />
       <VenueDrawer
         venue={selectedVenue}
