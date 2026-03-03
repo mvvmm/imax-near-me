@@ -124,6 +124,34 @@ function SetView({
   return null;
 }
 
+const isWindows =
+  typeof navigator !== "undefined" && /Win/i.test(navigator.platform);
+
+/** Reduce scroll zoom sensitivity on Windows (1/3 speed). */
+function ScrollZoomAdjust() {
+  const map = useMap();
+  useEffect(() => {
+    if (!isWindows) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handler = (map as any).smoothWheelZoom;
+    if (!handler) return;
+
+    const original = handler._onWheeling.bind(handler);
+    // eslint-disable-next-line react-hooks/immutability
+    handler._onWheeling = function (e: WheelEvent) {
+      const scaled = new Proxy(e, {
+        get(target, prop) {
+          if (prop === "deltaY") return target.deltaY / 3;
+          const val = Reflect.get(target, prop);
+          return typeof val === "function" ? val.bind(target) : val;
+        },
+      });
+      return original(scaled);
+    };
+  }, [map]);
+  return null;
+}
+
 const userLocationIcon = L.divIcon({
   html: `<div class="user-location"><div class="user-location-dot"></div><div class="user-location-pulse"></div></div>`,
   className: "custom-marker",
@@ -300,10 +328,12 @@ export function Map({
       // @ts-expect-error -- leaflet-smooth-wheel-zoom plugin options
       smoothWheelZoom={true}
       smoothSensitivity={25}
+      worldCopyJump={true}
       minZoom={2}
       zoomControl={false}
     >
       <SetView lat={center.lat} lng={center.lng} zoom={zoom} />
+      <ScrollZoomAdjust />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"

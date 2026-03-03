@@ -484,13 +484,14 @@ html {
   border-radius: 16px;
   padding: 20px;
   width: 340px;
-  max-height: calc(100vh - 32px);
+  max-height: calc(100vh - 56px);
   overflow-y: auto;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   color: #fff;
   margin-left: auto;
+  margin-bottom: 24px;
 }
 
 .info-panel::-webkit-scrollbar {
@@ -784,7 +785,11 @@ html {
 
   .info-panel {
     width: 100%;
-    max-height: calc(100vh - 100px);
+    max-height: none;
+    height: calc(100vh - 20px);
+    border-radius: 14px;
+    margin-bottom: 0;
+    margin-top: 24px;
   }
 
   .leaflet-control-attribution {
