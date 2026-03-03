@@ -124,6 +124,21 @@ function SetView({
   return null;
 }
 
+/** Recalculate map size after mobile viewport settles (dynamic address bar, etc.) */
+function InvalidateOnLoad() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => map.invalidateSize(), 100);
+    const onResize = () => map.invalidateSize();
+    window.addEventListener("resize", onResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [map]);
+  return null;
+}
+
 const isWindows =
   typeof navigator !== "undefined" && /Win/i.test(navigator.platform);
 
@@ -336,6 +351,7 @@ export function Map({
     >
       <SetView lat={center.lat} lng={center.lng} zoom={zoom} />
       <ScrollZoomAdjust />
+      <InvalidateOnLoad />
       {theme === "dark" ? (
         <TileLayer
           key="dark"
