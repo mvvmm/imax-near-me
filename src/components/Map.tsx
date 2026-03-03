@@ -3,12 +3,10 @@ import MapGL, {
   Popup,
   AttributionControl,
   type MapRef,
-  type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import Supercluster from "supercluster";
 import type { Venue, Filters, FilterKey } from "../types";
-import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { haversineKm, formatDistance } from "../utils";
 
 const DARK_STYLE =
@@ -42,8 +40,6 @@ const FILTER_PRIORITY: {
   { key: "dome", color: "#a855f7", test: (v) => isDome(v) },
 ];
 
-const COLOR_PRIORITY = ["#ef4444", "#f59e0b", "#3b82f6", "#a855f7", "#6b7280"];
-
 function isDome(venue: Venue): boolean {
   return (
     venue.digital_projector.toLowerCase().includes("dome") ||
@@ -63,12 +59,6 @@ function getColor(venue: Venue, filters: Filters): string {
 const isMobile =
   typeof window !== "undefined" &&
   window.matchMedia("(max-width: 768px)").matches;
-
-interface VenuePoint {
-  type: "Feature";
-  geometry: { type: "Point"; coordinates: [number, number] };
-  properties: { venueIndex: number; color: string };
-}
 
 function PinIcon({ color }: { color: string }) {
   return (
@@ -260,52 +250,6 @@ export function Map({
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [popupVenue, setPopupVenue] = useState<Venue | null>(null);
-  const [mapZoom, setMapZoom] = useState(zoom);
-  const [bounds, setBounds] = useState<[number, number, number, number] | null>(
-    null
-  );
-
-  // Build GeoJSON points with color info
-  const points = useMemo<VenuePoint[]>(
-    () =>
-      venues.map((v, i) => ({
-        type: "Feature" as const,
-        geometry: {
-          type: "Point" as const,
-          coordinates: [v.longitude, v.latitude] as [number, number],
-        },
-        properties: { venueIndex: i, color: getColor(v, filters) },
-      })),
-    [venues, filters]
-  );
-
-  // Create supercluster index
-  const index = useMemo(() => {
-    const sc = new Supercluster<VenuePoint["properties"]>({
-      radius: 40,
-      maxZoom: 16,
-    });
-    sc.load(points);
-    return sc;
-  }, [points]);
-
-  // Compute clusters from current viewport
-  const clusters = useMemo(() => {
-    if (!bounds) return [];
-    return index.getClusters(bounds, Math.floor(mapZoom));
-  }, [index, bounds, mapZoom]);
-
-  const onMove = useCallback((e: ViewStateChangeEvent) => {
-    setMapZoom(e.viewState.zoom);
-    const map = e.target;
-    const b = map.getBounds();
-    setBounds([
-      b.getWest(),
-      b.getSouth(),
-      b.getEast(),
-      b.getNorth(),
-    ]);
-  }, []);
 
   // Fly to user location when geolocation resolves (and map is ready)
   const hasCentered = useRef(false);
@@ -328,15 +272,6 @@ export function Map({
   }, [flyToUser]);
 
   const onLoad = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const b = map.getBounds();
-    setBounds([
-      b.getWest(),
-      b.getSouth(),
-      b.getEast(),
-      b.getNorth(),
-    ]);
     mapLoaded.current = true;
     flyToUser();
   }, [flyToUser]);
@@ -356,18 +291,6 @@ export function Map({
     [onSelectVenue]
   );
 
-  const handleClusterClick = useCallback(
-    (clusterId: number, lng: number, lat: number) => {
-      const expansionZoom = Math.min(index.getClusterExpansionZoom(clusterId), 20);
-      mapRef.current?.flyTo({
-        center: [lng, lat],
-        zoom: expansionZoom,
-        duration: 500,
-      });
-    },
-    [index]
-  );
-
   return (
     <MapGL
       ref={mapRef}
@@ -384,79 +307,24 @@ export function Map({
       touchPitch={true}
       touchZoomRotate={true}
       minZoom={2}
-      onMove={onMove}
       onLoad={onLoad}
     >
       <AttributionControl position="bottom-right" compact={false} />
 
-      {clusters.map((feature) => {
-        const [lng, lat] = feature.geometry.coordinates;
-        const props = feature.properties;
-
-        if ("cluster" in props && props.cluster) {
-          const count = props.point_count as number;
-          const clusterId = props.cluster_id as number;
-          let size = 36;
-          if (count >= 50) size = 48;
-          else if (count >= 15) size = 42;
-
-          // Find best color among leaves
-          const leaves = index.getLeaves(clusterId, Infinity);
-          let bestIndex = COLOR_PRIORITY.length - 1;
-          for (const leaf of leaves) {
-            const ci = COLOR_PRIORITY.indexOf(leaf.properties.color);
-            if (ci !== -1 && ci < bestIndex) {
-              bestIndex = ci;
-            }
-            if (bestIndex === 0) break;
-          }
-          const color = COLOR_PRIORITY[bestIndex];
-
-          return (
-            <Marker
-              key={`cluster-${clusterId}`}
-              longitude={lng}
-              latitude={lat}
-              anchor="center"
-              onClick={(e) => {
-                e.originalEvent.stopPropagation();
-                handleClusterClick(clusterId, lng, lat);
-              }}
-            >
-              <div
-                className="cluster-marker"
-                style={{
-                  width: size,
-                  height: size,
-                  background: `${color}cc`,
-                  boxShadow: `0 2px 10px ${color}88`,
-                }}
-              >
-                {count}
-              </div>
-            </Marker>
-          );
-        }
-
-        // Individual marker
-        const venue = venues[props.venueIndex];
-        if (!venue) return null;
-
-        return (
-          <Marker
-            key={`venue-${props.venueIndex}`}
-            longitude={lng}
-            latitude={lat}
-            anchor="bottom"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              handleMarkerClick(venue);
-            }}
-          >
-            <PinIcon color={props.color} />
-          </Marker>
-        );
-      })}
+      {venues.map((venue, i) => (
+        <Marker
+          key={`venue-${i}`}
+          longitude={venue.longitude}
+          latitude={venue.latitude}
+          anchor="bottom"
+          onClick={(e) => {
+            e.originalEvent.stopPropagation();
+            handleMarkerClick(venue);
+          }}
+        >
+          <PinIcon color={getColor(venue, filters)} />
+        </Marker>
+      ))}
 
       {popupVenue && (
         <VenuePopup
