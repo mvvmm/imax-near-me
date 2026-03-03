@@ -136,7 +136,10 @@ export function Filters({
                     : "var(--inactive-border)",
                   backgroundColor: filters[key] ? `${color}22` : "transparent",
                   color: filters[key] ? color : "var(--inactive-text)",
-                }}
+                  "--filter-bg-hover": filters[key] ? `${color}33` : "var(--btn-bg-hover)",
+                  "--filter-border-hover": filters[key] ? color : "var(--btn-border-hover)",
+                  "--filter-color-hover": filters[key] ? color : "var(--btn-text-hover)",
+                } as React.CSSProperties}
                 onClick={() => onToggle(key)}
               >
                 <span

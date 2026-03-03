@@ -10,7 +10,7 @@ import type {
   Filters as FiltersType,
   FilterKey,
 } from "./types";
-import "leaflet/dist/leaflet.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "./App.css";
 
 function isDome(venue: Venue): boolean {
