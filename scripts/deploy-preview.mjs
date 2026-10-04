@@ -20,7 +20,8 @@ child.on('close', async code => {
       } catch { /* Try the next JSON boundary. */ }
     }
     if (!result) throw new Error('Could not find cf preview JSON in command output');
-    await writePreviewOutput(result, process.env.WRANGLER_OUTPUT_FILE_DIRECTORY, '70mm');
+    const file = await writePreviewOutput(result, process.env.WRANGLER_OUTPUT_FILE_DIRECTORY, '70mm', process.env.WRANGLER_OUTPUT_FILE_PATH);
+    if (file) console.log(`Reported preview URLs to Workers Builds: ${file}`);
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
