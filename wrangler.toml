@@ -1,6 +1,0 @@
-name = "70mm"
-compatibility_date = "2026-03-01"
-route = { pattern = "imaxnearme.com/*", zone_name = "imaxnearme.com" }
-
-[assets]
-directory = "./dist"

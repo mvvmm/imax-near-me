@@ -6,7 +6,7 @@ Live at [imaxnearme.com](https://imaxnearme.com).
 
 ## Architecture
 
-React SPA deployed on Cloudflare Workers. Venue data is fetched at runtime from Cloudflare R2 (`data.imaxnearme.com/imax-venues.json`). No server-side rendering or backend API — the worker serves static assets only.
+React SPA deployed on Cloudflare Workers. Venue data is fetched at runtime from Cloudflare R2 (`data.imaxnearme.com/imax-venues.json`). The website Worker serves static assets only. A separate `workers/fetch-venues/` Worker runs a twice-monthly Cloudflare cron and durable Workflow to refresh R2 data. Both projects use the cf CLI and Cloudflare Vite plugin.
 
 ## Project Structure
 
@@ -55,7 +55,10 @@ React 19, TypeScript, Vite, Leaflet, React-Leaflet, Cloudflare Workers/R2
 |---|---|
 | `npm run dev` | Start local dev server |
 | `npm run build` | TypeScript check + production build |
-| `npm run deploy` | Build and deploy to Cloudflare |
+| `npm run deploy` | Build and deploy to Cloudflare with cf |
+| `npm run deploy:preview` | Deploy a PR/branch preview and report URLs to Builds |
+| `npm run deploy:fetch-venues` | Build and deploy the cron/Workflow Worker |
+| `npm run refresh-venues` | Start a manual Cloudflare refresh |
 | `npm run fetch-venues` | Run full data pipeline |
 | `npm run upload-venues` | Upload venue data to R2 |
 | `npm run upload-cache` | Upload Google Places cache to R2 |

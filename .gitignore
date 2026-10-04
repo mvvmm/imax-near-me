@@ -1,8 +1,10 @@
 .env
+.dev.vars*
 theatre-details.json
 node_modules
 dist
 .wrangler/
+.cloudflare/
 .claude/
 *.log
 .DS_Store
