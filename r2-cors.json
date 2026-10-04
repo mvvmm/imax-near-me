@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": [
+          "https://gl.imaxnearme.com",
+          "https://imaxnearme.com",
+          "http://localhost:5173",
+          "https://*-70mm.root-mvm.workers.dev"
+        ],
+        "methods": ["GET"],
+        "headers": ["*"]
+      },
+      "maxAgeSeconds": 86400
+    }
+  ]
+}

@@ -7,21 +7,23 @@
 set -euo pipefail
 
 OBJECT_PATH="$1"
+BUCKET="${OBJECT_PATH%%/*}"
+OBJECT_KEY="${OBJECT_PATH#*/}"
 LOCAL_FILE="$2"
 
 LOCAL_SIZE=$(wc -c < "$LOCAL_FILE" | tr -d ' ')
 
-# Get remote object size via wrangler (download to temp file)
+# Get remote object size via cf (download to temp file)
 TEMP=$(mktemp)
 trap 'rm -f "$TEMP"' EXIT
 
-if wrangler r2 object get "$OBJECT_PATH" --file="$TEMP" --remote 2>/dev/null; then
+if cf r2 objects get "$OBJECT_KEY" --bucket-name "$BUCKET" > "$TEMP" 2>/dev/null; then
   REMOTE_SIZE=$(wc -c < "$TEMP" | tr -d ' ')
   THRESHOLD=$(( REMOTE_SIZE * 90 / 100 ))
 
   if [ "$LOCAL_SIZE" -lt "$THRESHOLD" ]; then
     echo "ABORTED: Local file ($LOCAL_SIZE bytes) is more than 10% smaller than remote ($REMOTE_SIZE bytes)." >&2
-    echo "This likely indicates data loss. Use wrangler directly to force upload." >&2
+    echo "This likely indicates data loss. Use cf directly to force upload." >&2
     exit 1
   fi
 
@@ -30,4 +32,4 @@ else
   echo "No existing remote object, uploading fresh."
 fi
 
-wrangler r2 object put "$OBJECT_PATH" --file="$LOCAL_FILE" --remote
+cf r2 objects put "$OBJECT_KEY" --bucket-name "$BUCKET" --file "$LOCAL_FILE" --content-type application/json
