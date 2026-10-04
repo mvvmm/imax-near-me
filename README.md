@@ -65,6 +65,12 @@ route and cron, and supplies an empty Google Places key. The actual key is a
 **production-only Builds secret**. The production deploy wrapper passes it to cf
 through a temporary file with private permissions, then deletes the file.
 
+The public R2 bucket must allow browser GET requests from the website and its
+branch/per-commit preview origins. `r2-cors.json` preserves the production and
+localhost origins and adds `https://*-70mm.root-mvm.workers.dev`. Apply this
+bucket policy with `pnpm exec cf r2 buckets cors update imaxnearme-data --body
+@r2-cors.json --force`. This configures CORS without deploying a Worker.
+
 `cf previews deploy` currently omits the output file Workers Builds needs for
 PR comments ([cf issue #185](https://github.com/cloudflare/cf/issues/185)).
 `scripts/deploy-preview.mjs` runs cf and writes its result with `worker_name` and
