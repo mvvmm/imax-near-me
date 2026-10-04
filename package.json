@@ -5,14 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "cf dev",
-    "build": "npm run check:fetch-venues && tsc -b && cf build",
+    "build": "pnpm run check:fetch-venues && tsc -b && cf build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && npm run deploy:production",
+    "deploy": "pnpm run build && pnpm run deploy:production",
     "deploy:production": "node --env-file-if-exists=.env scripts/deploy-production.mjs",
     "preview:cf": "cf dev",
     "fetch-venues": "bash scripts/fetch-imax-venues.sh",
-    "check:fetch-venues": "npm run types && tsc -p tsconfig.worker.json",
+    "check:fetch-venues": "pnpm run types && tsc -p tsconfig.worker.json",
     "test:fetch-venues": "node --test worker/*.test.ts",
     "refresh-venues": "cf workflows instances create imaxnearme-venues",
     "upload-venues": "bash scripts/safe-r2-upload.sh imaxnearme-data/imax-venues.json imax-venues.json",
@@ -20,8 +20,8 @@
     "download-cache": "bash scripts/download-r2.sh imaxnearme-data/theatre-details.json theatre-details.json",
     "upload-imax-cache": "bash scripts/safe-r2-upload.sh imaxnearme-data/imax-urls.json imax-urls.json",
     "download-imax-cache": "bash scripts/download-r2.sh imaxnearme-data/imax-urls.json imax-urls.json",
-    "deploy:preview": "npm run check:fetch-venues && tsc -b && node scripts/deploy-preview.mjs",
-    "test": "npm run test:fetch-venues && node --test scripts/*.test.mjs",
+    "deploy:preview": "pnpm run check:fetch-venues && tsc -b && node scripts/deploy-preview.mjs",
+    "test": "pnpm run test:fetch-venues && node --test scripts/*.test.mjs",
     "types": "cf workers types"
   },
   "dependencies": {
@@ -48,5 +48,12 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "packageManager": "pnpm@10.26.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
   }
 }

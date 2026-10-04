@@ -37,7 +37,7 @@ scripts/
 
 ## Data Pipeline
 
-Venue data is sourced from the [IMAX Fandom Wiki](https://imax.fandom.com/wiki/List_of_IMAX_venues), enriched with Google Places API details (coordinates, address, phone, website), and matched to imax.com theatre pages for showtimes links. Results are cached in `theatre-details.json` and `imax-urls.json` to avoid redundant API calls. The pipeline runs via `npm run fetch-venues` and outputs `imax-venues.json`.
+Venue data is sourced from the [IMAX Fandom Wiki](https://imax.fandom.com/wiki/List_of_IMAX_venues), enriched with Google Places API details (coordinates, address, phone, website), and matched to imax.com theatre pages for showtimes links. Results are cached in `theatre-details.json` and `imax-urls.json` to avoid redundant API calls. The pipeline runs via `pnpm run fetch-venues` and outputs `imax-venues.json`.
 
 Only premium IMAX projectors are included: 15/70mm film, GT Laser, Laser XT/CoLa, and dome venues. Base-level single 2K xenon/laser screens are filtered out.
 
@@ -57,13 +57,13 @@ React 19, TypeScript, Vite, Leaflet, React-Leaflet, Cloudflare Workers/R2
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start local dev server |
-| `npm run build` | TypeScript check + production build |
-| `npm run deploy` | Build and deploy to Cloudflare with cf |
-| `npm run deploy:preview` | Deploy a PR/branch preview and report URLs to Builds |
-| `npm run check:fetch-venues` | Generate bindings types and check Worker code |
-| `npm run refresh-venues` | Start a manual Cloudflare refresh |
-| `npm run fetch-venues` | Run full data pipeline |
-| `npm run upload-venues` | Upload venue data to R2 |
-| `npm run upload-cache` | Upload Google Places cache to R2 |
-| `npm run download-cache` | Download Google Places cache from R2 |
+| `pnpm run dev` | Start local dev server |
+| `pnpm run build` | TypeScript check + production build |
+| `pnpm run deploy` | Build and deploy to Cloudflare with cf |
+| `pnpm run deploy:preview` | Deploy a PR/branch preview and report URLs to Builds |
+| `pnpm run check:fetch-venues` | Generate bindings types and check Worker code |
+| `pnpm run refresh-venues` | Start a manual Cloudflare refresh |
+| `pnpm run fetch-venues` | Run full data pipeline |
+| `pnpm run upload-venues` | Upload venue data to R2 |
+| `pnpm run upload-cache` | Upload Google Places cache to R2 |
+| `pnpm run download-cache` | Download Google Places cache from R2 |

@@ -9,12 +9,12 @@ from Cloudflare R2. Base-level xenon screens are excluded.
 
 ## Development
 
-Requires Node.js 24 or later.
+Requires Node.js 24 or later and pnpm 10.26.0 (pinned in `package.json`).
 
 ```sh
-npm ci
-npx cf auth login
-npm run dev
+pnpm install --frozen-lockfile
+pnpm exec cf auth login
+pnpm run dev
 ```
 
 The app uses `cloudflare.config.ts`, `cf`, and the Cloudflare Vite plugin.
@@ -23,7 +23,7 @@ refresh cron. Its `FetchVenues` export implements the durable Workflow; this
 is part of the same Worker.
 
 The shell data pipeline remains available for local use. Put
-`GOOGLE_PLACES_API_KEY` in `.env`, then run `npm run fetch-venues`. For local
+`GOOGLE_PLACES_API_KEY` in `.env`, then run `pnpm run fetch-venues`. For local
 venue data, copy `imax-venues.json` into `public/`.
 
 An API token in `.env` takes precedence over the saved cf login. To use the
@@ -34,20 +34,20 @@ commands with `CLOUDFLARE_API_TOKEN=`.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Develop the website with cf/Vite |
-| `npm run build` | Type-check and build Cloudflare Build Output |
-| `npm run deploy` | Build and deploy the combined Worker with cf |
-| `npm run deploy:production` | Deploy prebuilt output, installing the supplied secret |
-| `npm run deploy:preview` | Deploy a branch preview and report its URLs to Builds |
-| `npm test` | Test parsing, enrichment, upload guards, and preview reporting |
-| `npm run check:fetch-venues` | Generate bindings types and check the Worker |
-| `npm run refresh-venues` | Start a manual Cloudflare venue refresh |
-| `npm run fetch-venues` | Run the original local shell pipeline |
-| `npm run download-cache` | Download the Google Places cache through cf |
-| `npm run download-imax-cache` | Download the IMAX URL cache through cf |
-| `npm run upload-venues` | Upload venue data after the size-drop check |
-| `npm run upload-cache` | Upload the Google Places cache after the size-drop check |
-| `npm run upload-imax-cache` | Upload the IMAX URL cache after the size-drop check |
+| `pnpm run dev` | Develop the website with cf/Vite |
+| `pnpm run build` | Type-check and build Cloudflare Build Output |
+| `pnpm run deploy` | Build and deploy the combined Worker with cf |
+| `pnpm run deploy:production` | Deploy prebuilt output, installing the supplied secret |
+| `pnpm run deploy:preview` | Deploy a branch preview and report its URLs to Builds |
+| `pnpm test` | Test parsing, enrichment, upload guards, and preview reporting |
+| `pnpm run check:fetch-venues` | Generate bindings types and check the Worker |
+| `pnpm run refresh-venues` | Start a manual Cloudflare venue refresh |
+| `pnpm run fetch-venues` | Run the original local shell pipeline |
+| `pnpm run download-cache` | Download the Google Places cache through cf |
+| `pnpm run download-imax-cache` | Download the IMAX URL cache through cf |
+| `pnpm run upload-venues` | Upload venue data after the size-drop check |
+| `pnpm run upload-cache` | Upload the Google Places cache after the size-drop check |
+| `pnpm run upload-imax-cache` | Upload the IMAX URL cache after the size-drop check |
 
 ## Workers Builds and PR previews
 
@@ -57,8 +57,8 @@ Do not run a deployment manually without the repository owner's approval.
 
 | Build | Root | Build command | Deploy command |
 | --- | --- | --- | --- |
-| Production (`main`) | `/` | `npm test && npm run build` | `npm run deploy:production` |
-| Previews (feature branches/PRs) | `/` | `npm test` | `npm run deploy:preview` |
+| Production (`main`) | `/` | `pnpm test && pnpm run build` | `pnpm run deploy:production` |
+| Previews (feature branches/PRs) | `/` | `pnpm test` | `pnpm run deploy:preview` |
 
 PR previews serve the public R2 dataset. Their configuration omits the production
 route and cron, and supplies an empty Google Places key. The actual key is a
@@ -88,14 +88,14 @@ The public dataset is published last. Errors remain visible in Cloudflare
 Workflow status and Worker logs while the previous dataset stays available.
 
 The Worker requires the Cloudflare secret `GOOGLE_PLACES_API_KEY`. Workers Builds
-supplies it on merge through `npm run deploy:production`. Approved local deploys
+supplies it on merge through `pnpm run deploy:production`. Approved local deploys
 can read it from the ignored `.env`; subsequent cf deploys retain installed
 secrets. The running job uses a direct R2 binding and needs no Cloudflare API token.
 
 Inspect runs in the Cloudflare Workflows dashboard or with:
 
 ```sh
-npx cf workflows instances get INSTANCE_ID --workflow-name imaxnearme-venues
+pnpm exec cf workflows instances get INSTANCE_ID --workflow-name imaxnearme-venues
 ```
 
 ### Consolidation cutover
@@ -104,14 +104,14 @@ The earlier `imaxnearme-fetch-venues` Worker remains live until this PR is merge
 and `70mm` has successfully refreshed the data. Its Builds integration has been
 disconnected, so merging cannot deploy the removed nested project. After the merge:
 
-1. Run `npm run refresh-venues` and verify the returned instance reaches `complete`
+1. Run `pnpm run refresh-venues` and verify the returned instance reaches `complete`
    in the `imaxnearme-venues` Workflow.
 2. Check the refreshed R2 dataset and the website.
 3. Remove the legacy resources (these commands have not been run):
 
 ```sh
-npx cf workflows delete imaxnearme-fetch-venues
-npx cf workers delete imaxnearme-fetch-venues
+pnpm exec cf workflows delete imaxnearme-fetch-venues
+pnpm exec cf workers delete imaxnearme-fetch-venues
 ```
 
 Do not remove the `imaxnearme-data` bucket. Once cutover is verified and cleanup
