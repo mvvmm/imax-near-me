@@ -82,6 +82,9 @@ export class FetchVenues extends WorkflowEntrypoint<Env> {
 }
 
 export default {
+  fetch(request, env) {
+    return env.ASSETS.fetch(request);
+  },
   async scheduled(controller, env) {
     const instance = await env.FETCH_VENUES.create({ id: `scheduled-${controller.scheduledTime}` });
     console.log(JSON.stringify({ event: 'refresh-started', instance_id: instance.id }));

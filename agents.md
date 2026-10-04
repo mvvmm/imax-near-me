@@ -6,7 +6,7 @@ Live at [imaxnearme.com](https://imaxnearme.com).
 
 ## Architecture
 
-React SPA deployed on Cloudflare Workers. Venue data is fetched at runtime from Cloudflare R2 (`data.imaxnearme.com/imax-venues.json`). The website Worker serves static assets only. A separate `workers/fetch-venues/` Worker runs a twice-monthly Cloudflare cron and durable Workflow to refresh R2 data. Both projects use the cf CLI and Cloudflare Vite plugin.
+React SPA deployed on Cloudflare Workers. Venue data is fetched at runtime from Cloudflare R2 (`data.imaxnearme.com/imax-venues.json`). One Worker, `70mm`, serves static assets and runs a twice-monthly Cloudflare cron. The `worker/` directory contains its durable `FetchVenues` Workflow, which refreshes the R2 data. The project uses the cf CLI and Cloudflare Vite plugin. Workers Builds deploys production when the owner merges a PR to `main`; do not manually deploy without asking the owner.
 
 ## Project Structure
 
@@ -24,6 +24,10 @@ src/
 │   └── VenueDrawer.tsx      # Mobile venue detail drawer
 └── hooks/
     └── useGeolocation.ts    # Browser geolocation with permission handling
+worker/
+├── index.ts                # Website asset handler, cron, and refresh Workflow
+├── data.ts                 # Wiki parsing, enrichment, publication guards
+└── lookups.ts              # Google Places and IMAX URL lookups
 scripts/
 ├── fetch-imax-venues.sh     # Data pipeline: wiki → Google Places → IMAX URLs
 ├── lookup-theatre.sh        # Google Places API lookup + caching
@@ -57,7 +61,7 @@ React 19, TypeScript, Vite, Leaflet, React-Leaflet, Cloudflare Workers/R2
 | `npm run build` | TypeScript check + production build |
 | `npm run deploy` | Build and deploy to Cloudflare with cf |
 | `npm run deploy:preview` | Deploy a PR/branch preview and report URLs to Builds |
-| `npm run deploy:fetch-venues` | Build and deploy the cron/Workflow Worker |
+| `npm run check:fetch-venues` | Generate bindings types and check Worker code |
 | `npm run refresh-venues` | Start a manual Cloudflare refresh |
 | `npm run fetch-venues` | Run full data pipeline |
 | `npm run upload-venues` | Upload venue data to R2 |

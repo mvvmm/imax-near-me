@@ -15,9 +15,9 @@
     ]
   },
   "include": [
-    "*.ts"
+    "worker/*.ts"
   ],
   "exclude": [
-    "*.test.ts"
+    "**/*.test.ts"
   ]
 }

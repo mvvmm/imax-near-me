@@ -13,13 +13,14 @@ Requires Node.js 24 or later.
 
 ```sh
 npm ci
-npm ci --prefix workers/fetch-venues
 npx cf auth login
 npm run dev
 ```
 
-Both projects use `cloudflare.config.ts`, `cf`, and the Cloudflare Vite plugin.
-The website is an assets-only Worker named `70mm` on `imaxnearme.com`.
+The app uses `cloudflare.config.ts`, `cf`, and the Cloudflare Vite plugin.
+One Worker, `70mm`, serves the website on `imaxnearme.com` and runs the venue
+refresh cron. Its `FetchVenues` export implements the durable Workflow; this
+is part of the same Worker.
 
 The shell data pipeline remains available for local use. Put
 `GOOGLE_PLACES_API_KEY` in `.env`, then run `npm run fetch-venues`. For local
@@ -35,11 +36,11 @@ commands with `CLOUDFLARE_API_TOKEN=`.
 | --- | --- |
 | `npm run dev` | Develop the website with cf/Vite |
 | `npm run build` | Type-check and build Cloudflare Build Output |
-| `npm run deploy` | Build and deploy the website with cf |
+| `npm run deploy` | Build and deploy the combined Worker with cf |
+| `npm run deploy:production` | Deploy prebuilt output, installing the supplied secret |
 | `npm run deploy:preview` | Deploy a branch preview and report its URLs to Builds |
 | `npm test` | Test parsing, enrichment, upload guards, and preview reporting |
-| `npm run build:fetch-venues` | Generate types, check, and build the refresh Worker |
-| `npm run deploy:fetch-venues` | Deploy the refresh Worker |
+| `npm run check:fetch-venues` | Generate bindings types and check the Worker |
 | `npm run refresh-venues` | Start a manual Cloudflare venue refresh |
 | `npm run fetch-venues` | Run the original local shell pipeline |
 | `npm run download-cache` | Download the Google Places cache through cf |
@@ -50,18 +51,19 @@ commands with `CLOUDFLARE_API_TOKEN=`.
 
 ## Workers Builds and PR previews
 
-Both Workers connect to `mvvmm/imax-near-me` through Workers Builds, using Node 24.
+The existing `70mm` Worker connects to `mvvmm/imax-near-me` through Workers Builds,
+using Node 24. **Merging to `main` deploys production**; local checks do not deploy.
+Do not run a deployment manually without the repository owner's approval.
 
-| Worker | Build root | Build command | Deploy command |
+| Build | Root | Build command | Deploy command |
 | --- | --- | --- | --- |
-| Website production (`main`) | `/` | `npm test && npm run build` | `npx cf deploy --prebuilt --mode production` |
-| Website previews (feature branches/PRs) | `/` | `npm test` | `npm run deploy:preview` |
-| Venue refresh production (`main`) | `workers/fetch-venues` | `npm test && npm run build` | `npx cf deploy --prebuilt --mode production` |
+| Production (`main`) | `/` | `npm test && npm run build` | `npm run deploy:production` |
+| Previews (feature branches/PRs) | `/` | `npm test` | `npm run deploy:preview` |
 
-The refresh Worker watches `workers/fetch-venues/**`. Its Builds previews are
-disabled: website previews display the public R2 dataset, and feature branches
-must not schedule production data refreshes. The website production domain route
-is omitted in preview builds.
+PR previews serve the public R2 dataset. Their configuration omits the production
+route and cron, and supplies an empty Google Places key. The actual key is a
+**production-only Builds secret**. The production deploy wrapper passes it to cf
+through a temporary file with private permissions, then deletes the file.
 
 `cf previews deploy` currently omits the output file Workers Builds needs for
 PR comments ([cf issue #185](https://github.com/cloudflare/cf/issues/185)).
@@ -72,7 +74,7 @@ or executable is used. Remove this wrapper after the upstream fix is verified.
 
 ## Scheduled venue refresh
 
-`workers/fetch-venues/` deploys the separate `imaxnearme-fetch-venues` Worker.
+`worker/` contains the refresh code deployed alongside the website in `70mm`.
 Its cron runs at **06:00 UTC on the 1st and 15th of each month**
 (`0 6 1,15 * *`) and starts a durable Workflow. Scheduling is independent of
 GitHub repository activity; the old GitHub scheduled workflow has been retired.
@@ -85,18 +87,35 @@ venue and coordinate counts must also stay within 10% of the previous dataset.
 The public dataset is published last. Errors remain visible in Cloudflare
 Workflow status and Worker logs while the previous dataset stays available.
 
-The Worker requires the Cloudflare secret `GOOGLE_PLACES_API_KEY`. For its first
-deployment, use a private JSON secrets file containing that key:
+The Worker requires the Cloudflare secret `GOOGLE_PLACES_API_KEY`. Workers Builds
+supplies it on merge through `npm run deploy:production`. Approved local deploys
+can read it from the ignored `.env`; subsequent cf deploys retain installed
+secrets. The running job uses a direct R2 binding and needs no Cloudflare API token.
+
+Inspect runs in the Cloudflare Workflows dashboard or with:
 
 ```sh
-cd workers/fetch-venues
-npx cf deploy --secrets-file /path/to/secrets.json
+npx cf workflows instances get INSTANCE_ID --workflow-name imaxnearme-venues
 ```
 
-Subsequent deploys retain the installed secret. Never commit the secrets file.
-The running job uses a direct R2 binding and needs no Cloudflare API token.
-Inspect runs in the Cloudflare Workflows dashboard or with
-`cf workflows instances get imaxnearme-fetch-venues INSTANCE_ID`.
+### Consolidation cutover
+
+The earlier `imaxnearme-fetch-venues` Worker remains live until this PR is merged
+and `70mm` has successfully refreshed the data. Its Builds integration has been
+disconnected, so merging cannot deploy the removed nested project. After the merge:
+
+1. Run `npm run refresh-venues` and verify the returned instance reaches `complete`
+   in the `imaxnearme-venues` Workflow.
+2. Check the refreshed R2 dataset and the website.
+3. Remove the legacy resources (these commands have not been run):
+
+```sh
+npx cf workflows delete imaxnearme-fetch-venues
+npx cf workers delete imaxnearme-fetch-venues
+```
+
+Do not remove the `imaxnearme-data` bucket. Once cutover is verified and cleanup
+is complete, `70mm` is the only production Worker.
 
 ## Stack
 
