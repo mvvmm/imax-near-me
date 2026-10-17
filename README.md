@@ -39,7 +39,7 @@ commands with `CLOUDFLARE_API_TOKEN=`.
 | `pnpm run deploy` | Build and deploy the combined Worker with cf |
 | `pnpm run deploy:production` | Deploy prebuilt output, installing the supplied secret |
 | `pnpm run deploy:preview` | Deploy a branch preview and report its URLs to Builds |
-| `pnpm test` | Test parsing, enrichment, upload guards, and preview reporting |
+| `pnpm test` | Test parsing, enrichment, upload guards, and production secret handling |
 | `pnpm run check:fetch-venues` | Generate bindings types and check the Worker |
 | `pnpm run refresh-venues` | Start a manual Cloudflare venue refresh |
 | `pnpm run fetch-venues` | Run the original local shell pipeline |
@@ -61,9 +61,13 @@ Do not run a deployment manually without the repository owner's approval.
 | Previews (feature branches/PRs) | `/` | `pnpm test` | `pnpm run deploy:preview` |
 
 PR previews serve the public R2 dataset. Their configuration omits the production
-route and cron, and supplies an empty Google Places key. The actual key is a
-**production-only Builds secret**. The production deploy wrapper passes it to cf
-through a temporary file with private permissions, then deletes the file.
+route and cron. `GOOGLE_PLACES_API_KEY` uses `bindings.secret()` in every mode.
+Fresh previews can deploy without an installed key; cf preserves secrets already
+installed on a preview when redeploying. Do not use explicit `unsafe:inherit`
+bindings for preview secrets: they fail when the preview does not yet exist.
+The actual Google Places key remains a **production-only Builds secret**. The
+production deploy wrapper passes it to cf through a temporary file with private
+permissions, then deletes the file.
 
 The public R2 bucket must allow browser GET requests from the website and its
 branch/per-commit preview origins. `r2-cors.json` preserves the production and
@@ -71,12 +75,17 @@ localhost origins and adds `https://*-70mm.root-mvm.workers.dev`. Apply this
 bucket policy with `pnpm exec cf r2 buckets cors update imaxnearme-data --body
 @r2-cors.json --force`. This configures CORS without deploying a Worker.
 
-`cf previews deploy` currently omits the output file Workers Builds needs for
-PR comments ([cf issue #185](https://github.com/cloudflare/cf/issues/185)).
-`scripts/deploy-preview.mjs` runs cf and writes its result with `worker_name` and
-`timestamp` into `WRANGLER_OUTPUT_FILE_DIRECTORY`. The environment variable and
-file prefix are Cloudflare's existing reporting protocol; no Wrangler package
-or executable is used. Remove this wrapper after the upstream fix is verified.
+The project requires cf 1.0.0-beta.18 or later. `pnpm run deploy:preview` runs
+`cf previews deploy` directly after type-checking. cf writes the Workers Builds
+output protocol itself, including both the branch URL and deployment URL; no
+custom output-file wrapper is needed.
+
+To verify preview deployment changes, deploy a new preview name with
+`pnpm run deploy:preview <preview-name>`, then redeploy the same name. Check
+that Workers Builds reports both URLs on each build, both URLs serve the app,
+and any secret installed on the preview remains available after redeployment.
+The preview's route and cron must remain absent. Run `pnpm test`,
+`pnpm run lint`, and `pnpm run build` before submitting changes.
 
 ## Scheduled venue refresh
 

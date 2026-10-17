@@ -20,7 +20,7 @@
     "download-cache": "bash scripts/download-r2.sh imaxnearme-data/theatre-details.json theatre-details.json",
     "upload-imax-cache": "bash scripts/safe-r2-upload.sh imaxnearme-data/imax-urls.json imax-urls.json",
     "download-imax-cache": "bash scripts/download-r2.sh imaxnearme-data/imax-urls.json imax-urls.json",
-    "deploy:preview": "pnpm run check:fetch-venues && tsc -b && node scripts/deploy-preview.mjs",
+    "deploy:preview": "pnpm run check:fetch-venues && tsc -b && cf previews deploy",
     "test": "pnpm run test:fetch-venues && node --test scripts/*.test.mjs",
     "types": "cf workers types"
   },
@@ -37,7 +37,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "cf": "^1.0.0-beta.12",
+    "cf": "1.0.0-beta.18",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

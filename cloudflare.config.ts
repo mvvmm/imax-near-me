@@ -18,7 +18,7 @@ export default defineConfig(({ isPreview }) => ({
     env: {
       ASSETS: bindings.assets(),
       DATA: bindings.r2({ name: 'imaxnearme-data' }),
-      GOOGLE_PLACES_API_KEY: isPreview ? bindings.text('') : bindings.secret(),
+      GOOGLE_PLACES_API_KEY: bindings.secret(),
       FETCH_VENUES: bindings.workflow({ name: 'imaxnearme-venues', worker: '70mm', exportName: 'FetchVenues' }),
     },
     observability: { enabled: true, headSamplingRate: 1 },
